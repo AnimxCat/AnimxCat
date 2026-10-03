@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Stream Center Local</title>
 
     <link rel="stylesheet" href="style.css">
@@ -12,9 +13,6 @@
 
 <div class="app-layout">
 
-    <!-- =========================
-         COLUMNA IZQUIERDA
-         ========================= -->
     <div class="left-column">
 
         <div class="player-box">
@@ -22,7 +20,7 @@
             <video
                 id="videoPlayer"
                 playsinline
-                preload="metadata">
+                preload="auto">
             </video>
 
             <div id="emptyMessage" class="empty-message">
@@ -48,9 +46,6 @@
         </div>
 
 
-        <!-- =========================
-             CONTROLES DEL STREAMER
-             ========================= -->
         <div
             id="streamerControls"
             class="streamer-controls-container">
@@ -72,9 +67,6 @@
             </div>
 
 
-            <!-- =========================
-                 LISTA DE VIDEOS
-                 ========================= -->
             <div class="playlist-box">
 
                 <select
@@ -85,13 +77,11 @@
                         -- Selecciona un capítulo --
                     </option>
 
-                    <option
-                        value="https://github.com/AnimxCat/AnimxCat/releases/download/v1.0/evangelion1.mp4">
+                    <option value="https://github.com/AnimxCat/AnimxCat/releases/download/v1.0/evangelion1.mp4">
                         Evangelion 1
                     </option>
 
-                    <option
-                        value="https://github.com/AnimxCat/AnimxCat/releases/download/v1.0/anime.1.mp4">
+                    <option value="https://github.com/AnimxCat/AnimxCat/releases/download/v1.0/anime.1.mp4">
                         Anime 1
                     </option>
 
@@ -104,9 +94,6 @@
     </div>
 
 
-    <!-- =========================
-         COLUMNA DERECHA
-         ========================= -->
     <div class="right-column">
 
         <div class="twitch-stream-box">
