@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,7 +15,11 @@
 
         <div class="player-box">
 
-            <video id="videoPlayer" playsinline preload="auto"></video>
+            <video
+                id="videoPlayer"
+                playsinline
+                preload="metadata">
+            </video>
 
             <div id="emptyMessage" class="empty-message">
                 Selecciona un video para comenzar...
@@ -22,7 +27,9 @@
 
             <!-- Control de volumen SOLO para Viewer -->
             <div id="viewerVolumeControl" class="viewer-volume-control">
+
                 <span>🔊</span>
+
                 <input
                     type="range"
                     id="viewerVolume"
@@ -31,12 +38,15 @@
                     step="0.01"
                     value="1"
                 >
+
             </div>
 
         </div>
 
         <!-- Controles del Streamer -->
-        <div id="streamerControls" class="streamer-controls-container">
+        <div
+            id="streamerControls"
+            class="streamer-controls-container">
 
             <div class="search-box">
 
@@ -47,7 +57,9 @@
                     placeholder="Pega un enlace directo (.mp4)"
                 >
 
-                <button id="loadBtn" class="load-btn">
+                <button
+                    id="loadBtn"
+                    class="load-btn">
                     Cargar Video
                 </button>
 
@@ -55,7 +67,9 @@
 
             <div class="playlist-box">
 
-                <select id="chapterSelect" class="playlist-select">
+                <select
+                    id="chapterSelect"
+                    class="playlist-select">
 
                     <option value="">
                         -- Selecciona un capítulo --
@@ -103,3 +117,4 @@
 
 </body>
 </html>
+```
