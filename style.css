@@ -4,295 +4,81 @@
     padding: 0;
 }
 
-html,
 body {
-    width: 100%;
-    height: 100%;
-    background: #0b0f19;
-    color: #f3f4f6;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-}
-
-
-/* =========================================================
-   ESTRUCTURA PRINCIPAL
-   ========================================================= */
-
-.app-layout {
-    width: 100%;
-    height: 100vh;
-
-    display: grid;
-
-    grid-template-columns:
-        minmax(0, 1fr) 340px;
-
-    grid-template-rows:
-        1fr;
-
-    gap: 15px;
-
-    padding: 15px;
-}
-
-
-.left-column {
+    background-color: #0f172a;
+    color: #f8fafc;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
-
-    min-width: 0;
-}
-
-
-/* =========================================================
-   REPRODUCTOR
-   ========================================================= */
-
-.player-box {
-    position: relative;
-
-    flex: 1;
-
-    background: #000;
-
-    border:
-        2px solid #1f2937;
-
-    border-radius: 8px;
-
-    overflow: hidden;
-}
-
-
-#videoPlayer {
-    width: 100%;
-    height: 100%;
-
-    object-fit: contain;
-
-    background: #000;
-
-    display: none;
-}
-
-
-.empty-message {
-    position: absolute;
-
-    inset: 0;
-
-    display: flex;
-
     justify-content: center;
-
-    align-items: center;
-
-    color: #9ca3af;
-
-    font-size: 18px;
+    padding: 20px;
+    min-height: 100vh;
 }
 
-
-/* =========================================================
-   CONTROL DE VOLUMEN DEL VIEWER
-   ========================================================= */
-
-.viewer-volume-control {
-
-    position: absolute;
-
-    right: 15px;
-    bottom: 15px;
-
-    display: none;
-
-    align-items: center;
-
-    gap: 8px;
-
-    padding:
-        8px 12px;
-
-    background:
-        rgba(0, 0, 0, 0.75);
-
-    border-radius: 8px;
-
-    z-index: 50;
-}
-
-
-.viewer-volume-control span {
-
-    font-size: 18px;
-
-    user-select: none;
-
-}
-
-
-#viewerVolume {
-
-    width: 120px;
-
-    cursor: pointer;
-
-    accent-color: #10b981;
-
-}
-
-
-/* =========================================================
-   CONTROLES DEL STREAMER
-   ========================================================= */
-
-.streamer-controls-container {
-
+.container {
+    width: 100%;
+    max-width: 900px;
     display: flex;
-
     flex-direction: column;
-
-    gap: 10px;
-
-    flex-shrink: 0;
+    gap: 20px;
 }
 
-
-.search-box {
-
+.controls-panel {
+    background-color: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     display: flex;
-
-    gap: 10px;
+    flex-direction: column;
+    gap: 12px;
 }
 
+.controls-panel h2 {
+    font-size: 1.25rem;
+    color: #38bdf8;
+    margin-bottom: 5px;
+}
 
-.url-input {
-
-    flex: 1;
-
-    height: 40px;
-
-    background: #111827;
-
-    color: white;
-
-    border:
-        1px solid #374151;
-
-    border-radius: 6px;
-
-    padding:
-        0 12px;
-
+.playlist-select, input[type="text"] {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background-color: #0f172a;
+    color: #fff;
+    font-size: 0.95rem;
     outline: none;
 }
 
-
-.load-btn {
-
-    height: 40px;
-
-    background: #10b981;
-
-    color: white;
-
-    border: none;
-
-    padding:
-        0 20px;
-
-    border-radius: 6px;
-
-    font-weight: bold;
-
-    cursor: pointer;
-}
-
-
-.load-btn:hover {
-
-    background: #059669;
-
-}
-
-
-.playlist-select {
-
-    width: 100%;
-
-    height: 40px;
-
-    background: #111827;
-
-    color: white;
-
-    border:
-        1px solid #374151;
-
-    border-radius: 6px;
-
-    padding:
-        0 12px;
-
-    outline: none;
-
-    cursor: pointer;
-}
-
-
-/* =========================================================
-   TWITCH
-   ========================================================= */
-
-.right-column {
-
+.custom-url-group {
     display: flex;
-
-    flex-direction: column;
-
-    gap: 15px;
+    gap: 10px;
 }
 
-
-.twitch-stream-box {
-
-    height: 220px;
-
-    background: #111827;
-
-    border:
-        2px solid #1f2937;
-
-    border-radius: 8px;
-
-    overflow: hidden;
-}
-
-
-.twitch-chat-box {
-
-    flex: 1;
-
-    background: #111827;
-
-    border:
-        2px solid #1f2937;
-
-    border-radius: 8px;
-
-    overflow: hidden;
-}
-
-
-.iframe-fill {
-
-    width: 100%;
-
-    height: 100%;
-
+button {
+    padding: 10px 18px;
+    background-color: #0284c7;
+    color: white;
     border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #0369a1;
+}
+
+.player-wrapper {
+    width: 100%;
+    background-color: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+video {
+    width: 100%;
+    display: block;
+    aspect-ratio: 16 / 9;
 }
