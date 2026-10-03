@@ -10,6 +10,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     justify-content: center;
+    align-items: center;
     padding: 20px;
     min-height: 100vh;
 }
@@ -38,6 +39,11 @@ body {
     margin-bottom: 5px;
 }
 
+label {
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
 .playlist-select, input[type="text"] {
     width: 100%;
     padding: 10px 14px;
@@ -47,6 +53,10 @@ body {
     color: #fff;
     font-size: 0.95rem;
     outline: none;
+}
+
+.playlist-select:focus, input[type="text"]:focus {
+    border-color: #38bdf8;
 }
 
 .custom-url-group {
@@ -63,6 +73,7 @@ button {
     cursor: pointer;
     font-weight: 600;
     transition: background-color 0.2s;
+    white-space: nowrap;
 }
 
 button:hover {
