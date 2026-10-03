@@ -42,33 +42,29 @@ if (twitchChatFrame) {
 }
 
 /* =========================================================
-   PEERJS (Sincronización WebRTC por Internet)
+   PEERJS (Sincronización por Internet)
    ========================================================= */
 
-// Cargar la librería PeerJS dinámicamente
 const peerScript = document.createElement('script');
 peerScript.src = 'https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js';
 document.head.appendChild(peerScript);
 
 const STREAMER_PEER_ID = "animxcat-stream-room-v1";
 let peer = null;
-let connections = []; // Conexiones de espectadores (si es Streamer)
-let streamerConn = null; // Conexión con el Streamer (si es Viewer)
+let connections = [];
+let streamerConn = null;
 
 peerScript.onload = () => {
     if (isStreamer) {
-        // Inicializar el Streamer con una ID fija
         peer = new Peer(STREAMER_PEER_ID);
 
         peer.on('open', (id) => {
             console.log("Streamer listo con ID:", id);
         });
 
-        // Aceptar espectadores que se conectan
         peer.on('connection', (conn) => {
             connections.push(conn);
             
-            // Enviar estado actual del video al nuevo espectador
             if (video && video.src) {
                 conn.send({
                     type: "LOAD",
@@ -83,7 +79,6 @@ peerScript.onload = () => {
         });
 
     } else {
-        // Inicializar el Espectador con ID aleatoria y conectarse al Streamer
         peer = new Peer();
 
         peer.on('open', () => {
@@ -96,7 +91,6 @@ peerScript.onload = () => {
     }
 };
 
-// Función para enviar mensajes del Streamer a TODOS los espectadores
 function broadcast(data) {
     connections.forEach(conn => {
         if (conn.open) {
@@ -130,6 +124,7 @@ function setVideoSource(filePath, notifyViewer = false) {
     showVideo();
     video.src = filePath;
     video.load();
+    video.play().catch(err => console.log("Esperando reproducción del usuario...", err));
 
     if (notifyViewer) {
         broadcast({
@@ -154,7 +149,7 @@ if (isStreamer) {
 
     if (loadBtn) {
         loadBtn.addEventListener("click", () => {
-            let path = urlInput.value.trim();
+            const path = urlInput.value.trim();
             if (!path) return;
             setVideoSource(path, true);
             urlInput.value = "";
@@ -179,7 +174,6 @@ if (isStreamer) {
         broadcast({ type: "SEEK", time: video.currentTime });
     });
 
-    // Envío constante de posición cada 1 segundo para corregir desfases
     setInterval(() => {
         if (!video || video.readyState < HTMLMediaElement.HAVE_METADATA) return;
 
