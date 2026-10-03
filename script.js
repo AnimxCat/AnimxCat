@@ -1,4 +1,9 @@
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
+
 const twitchChannel = "theponchomx";
+const twitchParent = "animxcat.github.io";
 
 const params = new URLSearchParams(window.location.search);
 
@@ -7,7 +12,7 @@ const isViewer = !isStreamer;
 
 
 /* =========================================================
-   ELEMENTOS
+   ELEMENTOS HTML
    ========================================================= */
 
 const video = document.getElementById("videoPlayer");
@@ -42,43 +47,52 @@ const twitchChatFrame =
    TWITCH
    ========================================================= */
 
-const currentHost =
-    window.location.hostname || "localhost";
-
 if (twitchStreamFrame) {
 
     twitchStreamFrame.src =
-        `https://player.twitch.tv/?channel=${twitchChannel}&parent=${currentHost}&theme=dark`;
+        `https://player.twitch.tv/?channel=${twitchChannel}&parent=${twitchParent}&theme=dark`;
 
 }
 
 if (twitchChatFrame) {
 
     twitchChatFrame.src =
-        `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${currentHost}&theme=dark`;
+        `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${twitchParent}&theme=dark`;
 
 }
 
 
 /* =========================================================
-   VISTA STREAMER / VIEWER
+   CONFIGURACIÓN DE VISTA
    ========================================================= */
 
 if (isViewer) {
 
-    streamerControls.style.display = "none";
+    if (streamerControls) {
+        streamerControls.style.display = "none";
+    }
 
-    video.controls = false;
+    if (video) {
+        video.controls = false;
+    }
 
-    viewerVolumeControl.style.display = "flex";
+    if (viewerVolumeControl) {
+        viewerVolumeControl.style.display = "flex";
+    }
 
 } else {
 
-    streamerControls.style.display = "flex";
+    if (streamerControls) {
+        streamerControls.style.display = "flex";
+    }
 
-    video.controls = true;
+    if (video) {
+        video.controls = true;
+    }
 
-    viewerVolumeControl.style.display = "none";
+    if (viewerVolumeControl) {
+        viewerVolumeControl.style.display = "none";
+    }
 
 }
 
@@ -89,15 +103,19 @@ if (isViewer) {
 
 function showVideo() {
 
-    emptyMessage.style.display = "none";
+    if (emptyMessage) {
+        emptyMessage.style.display = "none";
+    }
 
-    video.style.display = "block";
+    if (video) {
+        video.style.display = "block";
+    }
 
 }
 
 
 /* =========================================================
-   CARGAR PEERJS
+   PEERJS
    ========================================================= */
 
 const peerScript =
@@ -110,7 +128,7 @@ peerScript.onload = () => {
 
     console.log("PeerJS cargado correctamente.");
 
-    startPeerConnection();
+    startPeer();
 
 };
 
@@ -126,24 +144,55 @@ document.head.appendChild(peerScript);
 
 
 /* =========================================================
-   PEERJS
+   SALA
    ========================================================= */
 
 const ROOM_ID =
     "animxcat-stream-room-v3";
 
+
 let peer = null;
 
 let connections = [];
 
-let streamerConnection = null;
+let streamerConn = null;
+
+
+/* =========================================================
+   BROADCAST
+   ========================================================= */
+
+function broadcast(data) {
+
+    connections.forEach((conn) => {
+
+        if (conn && conn.open) {
+
+            try {
+
+                conn.send(data);
+
+            } catch (error) {
+
+                console.error(
+                    "Error enviando datos:",
+                    error
+                );
+
+            }
+
+        }
+
+    });
+
+}
 
 
 /* =========================================================
    INICIAR PEER
    ========================================================= */
 
-function startPeerConnection() {
+function startPeer() {
 
 
     /* =====================================================
@@ -158,7 +207,7 @@ function startPeerConnection() {
         peer.on("open", (id) => {
 
             console.log(
-                "Streamer conectado:",
+                "Streamer listo. Sala:",
                 id
             );
 
@@ -178,16 +227,19 @@ function startPeerConnection() {
             conn.on("open", () => {
 
                 console.log(
-                    "Viewer conectado."
+                    "Viewer conectado correctamente."
                 );
 
 
                 /*
-                 * Si ya hay un video cargado,
-                 * se lo enviamos al nuevo viewer.
+                 * Si el streamer ya tiene un video,
+                 * se lo mandamos al nuevo viewer.
                  */
 
-                if (video.src) {
+                if (
+                    video &&
+                    video.src
+                ) {
 
                     conn.send({
 
@@ -235,6 +287,16 @@ function startPeerConnection() {
                 error
             );
 
+            if (
+                error.type === "unavailable-id"
+            ) {
+
+                console.warn(
+                    "La sala ya está ocupada. Cierra otra pestaña del streamer."
+                );
+
+            }
+
         });
 
     }
@@ -252,9 +314,8 @@ function startPeerConnection() {
         peer.on("open", () => {
 
             console.log(
-                "Viewer listo."
+                "Viewer listo. Conectando..."
             );
-
 
             connectToStreamer();
 
@@ -276,7 +337,7 @@ function startPeerConnection() {
 
 
 /* =========================================================
-   CONECTAR VIEWER
+   CONECTAR VIEWER AL STREAMER
    ========================================================= */
 
 function connectToStreamer() {
@@ -286,16 +347,26 @@ function connectToStreamer() {
     }
 
 
+    if (
+        streamerConn &&
+        streamerConn.open
+    ) {
+
+        return;
+
+    }
+
+
     console.log(
         "Conectando al streamer..."
     );
 
 
-    streamerConnection =
+    streamerConn =
         peer.connect(ROOM_ID);
 
 
-    streamerConnection.on("open", () => {
+    streamerConn.on("open", () => {
 
         console.log(
             "Viewer conectado al streamer."
@@ -304,18 +375,21 @@ function connectToStreamer() {
     });
 
 
-    streamerConnection.on("data", (data) => {
+    streamerConn.on("data", (data) => {
 
-        handleViewerData(data);
+        handleViewerSync(data);
 
     });
 
 
-    streamerConnection.on("close", () => {
+    streamerConn.on("close", () => {
 
         console.log(
-            "Conexión cerrada. Reintentando..."
+            "Conexión perdida. Reintentando..."
         );
+
+
+        streamerConn = null;
 
 
         setTimeout(() => {
@@ -327,7 +401,7 @@ function connectToStreamer() {
     });
 
 
-    streamerConnection.on("error", (error) => {
+    streamerConn.on("error", (error) => {
 
         console.error(
             "Error de conexión:",
@@ -340,52 +414,27 @@ function connectToStreamer() {
 
 
 /* =========================================================
-   ENVIAR A TODOS LOS VIEWERS
-   ========================================================= */
-
-function broadcast(data) {
-
-    connections.forEach((conn) => {
-
-        if (conn && conn.open) {
-
-            try {
-
-                conn.send(data);
-
-            } catch (error) {
-
-                console.error(
-                    "Error enviando:",
-                    error
-                );
-
-            }
-
-        }
-
-    });
-
-}
-
-
-/* =========================================================
-   CARGAR VIDEO
+   CARGAR VIDEO EN STREAMER
    ========================================================= */
 
 function setVideoSource(
-    path,
-    notifyViewer = true
+    filePath,
+    notifyViewer = false
 ) {
 
-    if (!path) {
+    if (
+        !filePath ||
+        !video
+    ) {
+
         return;
+
     }
 
 
     console.log(
-        "Cargando:",
-        path
+        "Cargando video:",
+        filePath
     );
 
 
@@ -395,36 +444,41 @@ function setVideoSource(
     video.pause();
 
 
-    video.src = path;
+    video.src =
+        filePath;
 
 
     video.load();
 
 
     /*
-     * Esperamos a que el video tenga
-     * información suficiente para reproducirse.
+     * Esperar a que el video tenga metadatos
+     * antes de intentar reproducir.
      */
 
-    video.addEventListener(
-        "loadedmetadata",
-        function playAfterLoad() {
+    const playWhenReady =
+        () => {
 
             video.removeEventListener(
                 "loadedmetadata",
-                playAfterLoad
+                playWhenReady
             );
 
 
             video.play().catch(() => {
 
                 console.log(
-                    "El navegador requiere interacción para reproducir."
+                    "El navegador bloqueó el autoplay."
                 );
 
             });
 
-        }
+        };
+
+
+    video.addEventListener(
+        "loadedmetadata",
+        playWhenReady
     );
 
 
@@ -434,7 +488,7 @@ function setVideoSource(
 
             type: "LOAD",
 
-            path: path,
+            path: filePath,
 
             time: 0,
 
@@ -448,10 +502,13 @@ function setVideoSource(
 
 
 /* =========================================================
-   SELECTOR
+   SELECTOR DE VIDEOS
    ========================================================= */
 
-if (isStreamer && chapterSelect) {
+if (
+    isStreamer &&
+    chapterSelect
+) {
 
     chapterSelect.addEventListener(
         "change",
@@ -478,10 +535,13 @@ if (isStreamer && chapterSelect) {
 
 
 /* =========================================================
-   BOTÓN CARGAR
+   BOTÓN CARGAR VIDEO
    ========================================================= */
 
-if (isStreamer && loadBtn) {
+if (
+    isStreamer &&
+    loadBtn
+) {
 
     loadBtn.addEventListener(
         "click",
@@ -511,18 +571,25 @@ if (isStreamer && loadBtn) {
 
 
 /* =========================================================
-   ENTER
+   ENTER EN EL INPUT
    ========================================================= */
 
-if (isStreamer && urlInput) {
+if (
+    isStreamer &&
+    urlInput
+) {
 
     urlInput.addEventListener(
         "keydown",
         (event) => {
 
-            if (event.key === "Enter") {
+            if (
+                event.key === "Enter"
+            ) {
 
-                loadBtn.click();
+                if (loadBtn) {
+                    loadBtn.click();
+                }
 
             }
 
@@ -546,7 +613,8 @@ if (isStreamer) {
 
                 type: "PLAY",
 
-                time: video.currentTime
+                time:
+                    video.currentTime
 
             });
 
@@ -555,7 +623,7 @@ if (isStreamer) {
 
 
     /* =====================================================
-       PAUSE
+       PAUSE DEL STREAMER
        ===================================================== */
 
     video.addEventListener(
@@ -566,7 +634,8 @@ if (isStreamer) {
 
                 type: "PAUSE",
 
-                time: video.currentTime
+                time:
+                    video.currentTime
 
             });
 
@@ -575,7 +644,7 @@ if (isStreamer) {
 
 
     /* =====================================================
-       SEEK
+       SEEK DEL STREAMER
        ===================================================== */
 
     video.addEventListener(
@@ -586,7 +655,8 @@ if (isStreamer) {
 
                 type: "SEEK",
 
-                time: video.currentTime
+                time:
+                    video.currentTime
 
             });
 
@@ -598,41 +668,52 @@ if (isStreamer) {
        HEARTBEAT
        ===================================================== */
 
-    setInterval(() => {
+    setInterval(
+        () => {
 
-        if (
-            video.readyState <
-            HTMLMediaElement.HAVE_METADATA
-        ) {
+            if (
+                !video ||
+                video.readyState <
+                HTMLMediaElement.HAVE_METADATA
+            ) {
 
-            return;
+                return;
 
-        }
+            }
 
 
-        broadcast({
+            broadcast({
 
-            type: "HEARTBEAT",
+                type: "HEARTBEAT",
 
-            time: video.currentTime,
+                time:
+                    video.currentTime,
 
-            playing: !video.paused
+                playing:
+                    !video.paused
 
-        });
+            });
 
-    }, 1000);
+        },
+        1000
+    );
 
 }
 
 
 /* =========================================================
-   DATOS DEL VIEWER
+   SINCRONIZACIÓN DEL VIEWER
    ========================================================= */
 
-async function handleViewerData(data) {
+async function handleViewerSync(data) {
 
-    if (!data) {
+    if (
+        !data ||
+        !video
+    ) {
+
         return;
+
     }
 
 
@@ -640,24 +721,29 @@ async function handleViewerData(data) {
        LOAD
        ===================================================== */
 
-    if (data.type === "LOAD") {
+    if (
+        data.type === "LOAD"
+    ) {
 
         showVideo();
 
 
-        video.src = data.path;
+        video.pause();
+
+
+        video.src =
+            data.path;
 
 
         video.load();
 
 
-        video.addEventListener(
-            "loadedmetadata",
-            function viewerLoad() {
+        const loadAndPlay =
+            () => {
 
                 video.removeEventListener(
                     "loadedmetadata",
-                    viewerLoad
+                    loadAndPlay
                 );
 
 
@@ -665,27 +751,30 @@ async function handleViewerData(data) {
                     typeof data.time === "number"
                 ) {
 
-                    video.currentTime =
-                        data.time;
+                    try {
+
+                        video.currentTime =
+                            data.time;
+
+                    } catch (error) {}
 
                 }
 
 
-                if (data.playing) {
+                if (
+                    data.playing
+                ) {
 
-                    video.play().catch(() => {
-
-                        /*
-                         * Autoplay bloqueado.
-                         * El viewer puede iniciar
-                         * mediante interacción.
-                         */
-
-                    });
+                    playVideoSafely();
 
                 }
 
-            }
+            };
+
+
+        video.addEventListener(
+            "loadedmetadata",
+            loadAndPlay
         );
 
 
@@ -698,19 +787,25 @@ async function handleViewerData(data) {
        PLAY
        ===================================================== */
 
-    if (data.type === "PLAY") {
+    if (
+        data.type === "PLAY"
+    ) {
 
         if (
             typeof data.time === "number"
         ) {
 
-            video.currentTime =
-                data.time;
+            try {
+
+                video.currentTime =
+                    data.time;
+
+            } catch (error) {}
 
         }
 
 
-        video.play().catch(() => {});
+        playVideoSafely();
 
 
         return;
@@ -722,14 +817,20 @@ async function handleViewerData(data) {
        PAUSE
        ===================================================== */
 
-    if (data.type === "PAUSE") {
+    if (
+        data.type === "PAUSE"
+    ) {
 
         if (
             typeof data.time === "number"
         ) {
 
-            video.currentTime =
-                data.time;
+            try {
+
+                video.currentTime =
+                    data.time;
+
+            } catch (error) {}
 
         }
 
@@ -746,14 +847,20 @@ async function handleViewerData(data) {
        SEEK
        ===================================================== */
 
-    if (data.type === "SEEK") {
+    if (
+        data.type === "SEEK"
+    ) {
 
         if (
             typeof data.time === "number"
         ) {
 
-            video.currentTime =
-                data.time;
+            try {
+
+                video.currentTime =
+                    data.time;
+
+            } catch (error) {}
 
         }
 
@@ -767,7 +874,9 @@ async function handleViewerData(data) {
        HEARTBEAT
        ===================================================== */
 
-    if (data.type === "HEARTBEAT") {
+    if (
+        data.type === "HEARTBEAT"
+    ) {
 
         if (
             video.readyState <
@@ -784,27 +893,48 @@ async function handleViewerData(data) {
             video.currentTime;
 
 
+        const absoluteDifference =
+            Math.abs(difference);
+
+
+        /*
+         * Diferencia grande:
+         * corregir directamente.
+         */
+
         if (
-            Math.abs(difference) > 1.5
+            absoluteDifference > 1.5
         ) {
 
-            video.currentTime =
-                data.time;
+            try {
+
+                video.currentTime =
+                    data.time;
+
+            } catch (error) {}
 
         }
 
+
+        /*
+         * El streamer reproduce.
+         */
 
         if (
             data.playing &&
             video.paused
         ) {
 
-            video.play().catch(() => {});
+            playVideoSafely();
 
         }
 
 
-        if (
+        /*
+         * El streamer pausa.
+         */
+
+        else if (
             !data.playing &&
             !video.paused
         ) {
@@ -819,7 +949,48 @@ async function handleViewerData(data) {
 
 
 /* =========================================================
-   VOLUMEN VIEWER
+   REPRODUCCIÓN SEGURA
+   ========================================================= */
+
+async function playVideoSafely() {
+
+    if (!video) {
+        return;
+    }
+
+
+    try {
+
+        await video.play();
+
+    } catch (error) {
+
+        /*
+         * Si el navegador bloquea autoplay,
+         * intentamos silenciar.
+         */
+
+        try {
+
+            video.muted = true;
+
+            await video.play();
+
+        } catch (secondError) {
+
+            console.log(
+                "El navegador bloqueó la reproducción automática."
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   VOLUMEN DEL VIEWER
    ========================================================= */
 
 if (
