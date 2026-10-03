@@ -1,4 +1,4 @@
-const twitchChannel = "catsaac_";
+const twitchChannel = "theponchomx";
 
 const params = new URLSearchParams(window.location.search);
 
