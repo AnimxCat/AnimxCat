@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Center Local</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+    <div class="left-column">
+
+        <div class="player-box">
+
+            <video id="videoPlayer" playsinline preload="auto"></video>
+
+            <div id="emptyMessage" class="empty-message">
+                Selecciona un video para comenzar...
+            </div>
+
+            <!-- Control de volumen SOLO para Viewer -->
+            <div id="viewerVolumeControl" class="viewer-volume-control">
+                <span>🔊</span>
+                <input
+                    type="range"
+                    id="viewerVolume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="1"
+                >
+            </div>
+
+        </div>
+
+        <!-- Controles del Streamer -->
+        <div id="streamerControls" class="streamer-controls-container">
+
+            <div class="search-box">
+
+                <input
+                    type="text"
+                    id="urlInput"
+                    class="url-input"
+                    placeholder="Nombre exacto del video (ej: anime 1.mp4)"
+                >
+
+                <button id="loadBtn" class="load-btn">
+                    Cargar Video
+                </button>
+
+            </div>
+
+            <div class="playlist-box">
+
+                <select id="chapterSelect" class="playlist-select">
+
+                    <option value="">
+                        -- Selecciona de la carpeta videos --
+                    </option>
+
+                    <option value="videos/anime 1.mp4">
+                        Anime 1
+                    </option>
+
+                    <option value="videos/evangelion1.mp4">
+                        Evangelion 1
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="right-column">
+
+        <div class="twitch-stream-box">
+
+            <iframe
+                id="twitchStreamFrame"
+                class="iframe-fill"
+                allowfullscreen>
+            </iframe>
+
+        </div>
+
+        <div class="twitch-chat-box">
+
+            <iframe
+                id="twitchChatFrame"
+                class="iframe-fill">
+            </iframe>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
