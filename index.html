@@ -3,214 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimxCat - Streamer & Viewer</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .controls-panel {
-            background-color: #1e293b;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .controls-panel h2 {
-            font-size: 1.25rem;
-            color: #38bdf8;
-            margin-bottom: 5px;
-        }
-
-        label {
-            font-size: 0.9rem;
-            color: #94a3b8;
-        }
-
-        .playlist-select, input[type="text"] {
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background-color: #0f172a;
-            color: #fff;
-            font-size: 0.95rem;
-            outline: none;
-        }
-
-        .playlist-select:focus, input[type="text"]:focus {
-            border-color: #38bdf8;
-        }
-
-        .custom-url-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 10px 18px;
-            background-color: #0284c7;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s;
-            white-space: nowrap;
-        }
-
-        button:hover {
-            background-color: #0369a1;
-        }
-
-        .player-wrapper {
-            width: 100%;
-            background-color: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-        }
-
-        video {
-            width: 100%;
-            display: block;
-            aspect-ratio: 16 / 9;
-        }
-    </style>
+    <title>Stream Center Local</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Control para el Streamer / Host -->
-        <div id="controls" class="controls-panel">
-            <h2>Panel de Control</h2>
-            
-            <label for="chapterSelect">Seleccionar Video:</label>
-            <select id="chapterSelect" class="playlist-select">
-                <option value="">-- Selecciona de la lista --</option>
-                <option value="https://github.com/AnimxCat/AnimxCat/releases/download/v1.0/evangelion1.mp4">Evangelion 1</option>
-            </select>
 
-            <div class="custom-url-group">
-                <input type="text" id="videoUrlInput" placeholder="O pega un enlace de video (.mp4)">
-                <button id="loadUrlBtn">Cargar URL</button>
+<div class="app-layout">
+
+    <div class="left-column">
+
+        <div class="player-box">
+
+            <video id="videoPlayer" playsinline preload="auto"></video>
+
+            <div id="emptyMessage" class="empty-message">
+                Selecciona un video para comenzar...
             </div>
+
+            <!-- Control de volumen SOLO para Viewer -->
+            <div id="viewerVolumeControl" class="viewer-volume-control">
+                <span>🔊</span>
+                <input
+                    type="range"
+                    id="viewerVolume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="1"
+                >
+            </div>
+
         </div>
 
-        <!-- Reproductor de Video -->
-        <div class="player-wrapper">
-            <video id="mainVideo" controls preload="metadata">
-                Tu navegador no soporta la reproducción de video HTML5.
-            </video>
+        <!-- Controles del Streamer -->
+        <div id="streamerControls" class="streamer-controls-container">
+
+            <div class="search-box">
+
+                <input
+                    type="text"
+                    id="urlInput"
+                    class="url-input"
+                    placeholder="Nombre exacto del video (ej: anime 1.mp4)"
+                >
+
+                <button id="loadBtn" class="load-btn">
+                    Cargar Video
+                </button>
+
+            </div>
+
+            <div class="playlist-box">
+
+                <select id="chapterSelect" class="playlist-select">
+
+                    <option value="">
+                        -- Selecciona de la carpeta videos --
+                    </option>
+
+                    <option value="videos/anime 1.mp4">
+                        Anime 1
+                    </option>
+
+                    <option value="videos/evangelion1.mp4">
+                        Evangelion 1
+                    </option>
+
+                </select>
+
+            </div>
+
         </div>
+
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const video = document.getElementById('mainVideo');
-            const chapterSelect = document.getElementById('chapterSelect');
-            const videoUrlInput = document.getElementById('videoUrlInput');
-            const loadUrlBtn = document.getElementById('loadUrlBtn');
-            const controlsPanel = document.getElementById('controls');
 
-            // Detectar si el usuario es espectador (?view=viewer)
-            const urlParams = new URLSearchParams(window.location.search);
-            const isViewer = urlParams.get('view') === 'viewer';
+    <div class="right-column">
 
-            if (isViewer) {
-                // Ocultar panel de control para el espectador
-                if (controlsPanel) controlsPanel.style.display = 'none';
-                
-                // Escuchar cambios guardados por el Host en LocalStorage
-                window.addEventListener('storage', (e) => {
-                    if (e.key === 'stream_state') {
-                        const state = JSON.parse(e.newValue);
-                        if (state) syncViewer(state);
-                    }
-                });
-            } else {
-                // Lógica del HOST (Streamer)
-                function updateState() {
-                    const state = {
-                        src: video.src,
-                        currentTime: video.currentTime,
-                        paused: video.paused,
-                        timestamp: Date.now()
-                    };
-                    localStorage.setItem('stream_state', JSON.stringify(state));
-                }
+        <div class="twitch-stream-box">
 
-                // Eventos para transmitir acciones
-                video.addEventListener('play', updateState);
-                video.addEventListener('pause', updateState);
-                video.addEventListener('seeked', updateState);
+            <iframe
+                id="twitchStreamFrame"
+                class="iframe-fill"
+                allowfullscreen>
+            </iframe>
 
-                // Selección por menú desplegable
-                chapterSelect.addEventListener('change', (e) => {
-                    const url = e.target.value;
-                    if (url) {
-                        video.src = url;
-                        video.play();
-                        updateState();
-                    }
-                });
+        </div>
 
-                // Selección por URL manual
-                loadUrlBtn.addEventListener('click', () => {
-                    const url = videoUrlInput.value.trim();
-                    if (url) {
-                        video.src = url;
-                        video.play();
-                        updateState();
-                    }
-                });
-            }
+        <div class="twitch-chat-box">
 
-            // Aplicar estado sincronizado al visor
-            function syncViewer(state) {
-                if (video.src !== state.src && state.src) {
-                    video.src = state.src;
-                }
+            <iframe
+                id="twitchChatFrame"
+                class="iframe-fill">
+            </iframe>
 
-                const timeDifference = (Date.now() - state.timestamp) / 1000;
-                const expectedTime = state.paused ? state.currentTime : state.currentTime + timeDifference;
+        </div>
 
-                if (Math.abs(video.currentTime - expectedTime) > 1.5) {
-                    video.currentTime = expectedTime;
-                }
+    </div>
 
-                if (state.paused && !video.paused) {
-                    video.pause();
-                } else if (!state.paused && video.paused) {
-                    video.play().catch(() => {
-                        console.log('El navegador bloqueó la reproducción automática.');
-                    });
-                }
-            }
-        });
-    </script>
+</div>
+
+<script src="script.js"></script>
+
 </body>
 </html>
