@@ -4,787 +4,258 @@
 
 const twitchChannel = "catsaac_";
 
-
 /* =========================================================
    STREAMER / VIEWER
    ========================================================= */
 
-const params = new URLSearchParams(
-    window.location.search
-);
-
-const isViewer =
-    params.get("streamer") !== "1";
-
-const isStreamer =
-    !isViewer;
-
+const params = new URLSearchParams(window.location.search);
+const isStreamer = params.get("streamer") === "1";
+const isViewer = !isStreamer;
 
 /* =========================================================
    ELEMENTOS
    ========================================================= */
 
-const video =
-    document.getElementById("videoPlayer");
-
-const emptyMessage =
-    document.getElementById("emptyMessage");
-
-const streamerControls =
-    document.getElementById("streamerControls");
-
-const urlInput =
-    document.getElementById("urlInput");
-
-const loadBtn =
-    document.getElementById("loadBtn");
-
-const chapterSelect =
-    document.getElementById("chapterSelect");
-
-const viewerVolumeControl =
-    document.getElementById("viewerVolumeControl");
-
-const viewerVolume =
-    document.getElementById("viewerVolume");
-
-const twitchStreamFrame =
-    document.getElementById("twitchStreamFrame");
-
-const twitchChatFrame =
-    document.getElementById("twitchChatFrame");
-
+const video = document.getElementById("videoPlayer");
+const emptyMessage = document.getElementById("emptyMessage");
+const streamerControls = document.getElementById("streamerControls");
+const urlInput = document.getElementById("urlInput");
+const loadBtn = document.getElementById("loadBtn");
+const chapterSelect = document.getElementById("chapterSelect");
+const viewerVolumeControl = document.getElementById("viewerVolumeControl");
+const viewerVolume = document.getElementById("viewerVolume");
+const twitchStreamFrame = document.getElementById("twitchStreamFrame");
+const twitchChatFrame = document.getElementById("twitchChatFrame");
 
 /* =========================================================
    TWITCH
    ========================================================= */
 
-const currentHost =
-    window.location.hostname || "localhost";
+const currentHost = window.location.hostname || "localhost";
 
 if (twitchStreamFrame) {
-
-    twitchStreamFrame.src =
-        `https://player.twitch.tv/?channel=${twitchChannel}&parent=${currentHost}&theme=dark`;
-
+    twitchStreamFrame.src = `https://player.twitch.tv/?channel=${twitchChannel}&parent=${currentHost}&theme=dark`;
 }
 
 if (twitchChatFrame) {
-
-    twitchChatFrame.src =
-        `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${currentHost}&theme=dark`;
-
+    twitchChatFrame.src = `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${currentHost}&theme=dark`;
 }
 
-
 /* =========================================================
-   CANAL ENTRE STREAMER Y VIEWER
+   PEERJS (Sincronización WebRTC por Internet)
    ========================================================= */
 
-const channel =
-    new BroadcastChannel(
-        "anime-stream-sync"
-    );
+// Cargar la librería PeerJS dinámicamente
+const peerScript = document.createElement('script');
+peerScript.src = 'https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js';
+document.head.appendChild(peerScript);
 
+const STREAMER_PEER_ID = "animxcat-stream-room-v1";
+let peer = null;
+let connections = []; // Conexiones de espectadores (si es Streamer)
+let streamerConn = null; // Conexión con el Streamer (si es Viewer)
 
-/* =========================================================
-   CONFIGURAR STREAMER / VIEWER
-   ========================================================= */
+peerScript.onload = () => {
+    if (isStreamer) {
+        // Inicializar el Streamer con una ID fija
+        peer = new Peer(STREAMER_PEER_ID);
 
-if (isViewer) {
-
-    /*
-     * Viewer:
-     * No muestra los controles del Streamer.
-     */
-
-    if (streamerControls) {
-
-        streamerControls.style.display =
-            "none";
-
-    }
-
-    /*
-     * El Viewer no tiene controles nativos.
-     * Solamente tendrá nuestro control de volumen.
-     */
-
-    video.controls = false;
-
-    /*
-     * El control de volumen sí se muestra.
-     */
-
-    if (viewerVolumeControl) {
-
-        viewerVolumeControl.style.display =
-            "flex";
-
-    }
-
-} else {
-
-    /*
-     * Streamer:
-     * Muestra sus controles normales.
-     */
-
-    if (streamerControls) {
-
-        streamerControls.style.display =
-            "flex";
-
-    }
-
-    video.controls = true;
-
-    /*
-     * El Streamer no necesita control de volumen
-     * adicional.
-     */
-
-    if (viewerVolumeControl) {
-
-        viewerVolumeControl.style.display =
-            "none";
-
-    }
-
-}
-
-
-/* =========================================================
-   MOSTRAR VIDEO
-   ========================================================= */
-
-function showVideo() {
-
-    if (emptyMessage) {
-
-        emptyMessage.style.display =
-            "none";
-
-    }
-
-    if (video) {
-
-        video.style.display =
-            "block";
-
-    }
-
-}
-
-
-/* =========================================================
-   CARGAR VIDEO
-   ========================================================= */
-
-function setVideoSource(
-    filePath,
-    notifyViewer = false
-) {
-
-    if (!filePath || !video) {
-
-        return;
-
-    }
-
-    showVideo();
-
-    video.src =
-        filePath;
-
-    video.load();
-
-
-    /*
-     * Si el Streamer carga un capítulo,
-     * avisamos inmediatamente al Viewer.
-     */
-
-    if (notifyViewer) {
-
-        channel.postMessage({
-
-            type: "LOAD",
-
-            path: filePath,
-
-            time: 0
-
+        peer.on('open', (id) => {
+            console.log("Streamer listo con ID:", id);
         });
 
+        // Aceptar espectadores que se conectan
+        peer.on('connection', (conn) => {
+            connections.push(conn);
+            
+            // Enviar estado actual del video al nuevo espectador
+            if (video && video.src) {
+                conn.send({
+                    type: "LOAD",
+                    path: video.src,
+                    time: video.currentTime
+                });
+            }
+
+            conn.on('close', () => {
+                connections = connections.filter(c => c !== conn);
+            });
+        });
+
+    } else {
+        // Inicializar el Espectador con ID aleatoria y conectarse al Streamer
+        peer = new Peer();
+
+        peer.on('open', () => {
+            streamerConn = peer.connect(STREAMER_PEER_ID);
+
+            streamerConn.on('data', (data) => {
+                handleViewerSync(data);
+            });
+        });
+    }
+};
+
+// Función para enviar mensajes del Streamer a TODOS los espectadores
+function broadcast(data) {
+    connections.forEach(conn => {
+        if (conn.open) {
+            conn.send(data);
+        }
+    });
+}
+
+/* =========================================================
+   CONFIGURAR INTERFAZ Y CONTROLES
+   ========================================================= */
+
+if (isViewer) {
+    if (streamerControls) streamerControls.style.display = "none";
+    video.controls = false;
+    if (viewerVolumeControl) viewerVolumeControl.style.display = "flex";
+} else {
+    if (streamerControls) streamerControls.style.display = "flex";
+    video.controls = true;
+    if (viewerVolumeControl) viewerVolumeControl.style.display = "none";
+}
+
+function showVideo() {
+    if (emptyMessage) emptyMessage.style.display = "none";
+    if (video) video.style.display = "block";
+}
+
+function setVideoSource(filePath, notifyViewer = false) {
+    if (!filePath || !video) return;
+
+    showVideo();
+    video.src = filePath;
+    video.load();
+
+    if (notifyViewer) {
+        broadcast({
+            type: "LOAD",
+            path: filePath,
+            time: 0
+        });
+    }
+}
+
+/* =========================================================
+   EVENTOS DEL STREAMER
+   ========================================================= */
+
+if (isStreamer) {
+    if (chapterSelect) {
+        chapterSelect.addEventListener("change", (e) => {
+            const path = e.target.value;
+            if (path) setVideoSource(path, true);
+        });
     }
 
+    if (loadBtn) {
+        loadBtn.addEventListener("click", () => {
+            let path = urlInput.value.trim();
+            if (!path) return;
+            setVideoSource(path, true);
+            urlInput.value = "";
+        });
+    }
+
+    if (urlInput) {
+        urlInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && loadBtn) loadBtn.click();
+        });
+    }
+
+    video.addEventListener("play", () => {
+        broadcast({ type: "PLAY", time: video.currentTime });
+    });
+
+    video.addEventListener("pause", () => {
+        broadcast({ type: "PAUSE", time: video.currentTime });
+    });
+
+    video.addEventListener("seeked", () => {
+        broadcast({ type: "SEEK", time: video.currentTime });
+    });
+
+    // Envío constante de posición cada 1 segundo para corregir desfases
+    setInterval(() => {
+        if (!video || video.readyState < HTMLMediaElement.HAVE_METADATA) return;
+
+        broadcast({
+            type: "HEARTBEAT",
+            time: video.currentTime,
+            playing: !video.paused
+        });
+    }, 1000);
 }
 
-
 /* =========================================================
-   STREAMER:
-   CARGAR CAPÍTULO DESDE SELECT
+   LÓGICA DE SINCRONIZACIÓN PARA EL VIEWER
    ========================================================= */
 
-if (isStreamer && chapterSelect) {
+async function handleViewerSync(data) {
+    if (!data || !video) return;
 
-    chapterSelect.addEventListener(
-        "change",
-        function (event) {
+    if (data.type === "LOAD") {
+        video.src = data.path;
+        video.load();
+        showVideo();
+        return;
+    }
 
-            const path =
-                event.target.value;
-
-            if (!path) {
-
-                return;
-
-            }
-
-            setVideoSource(
-                path,
-                true
-            );
-
+    if (data.type === "PLAY") {
+        if (typeof data.time === "number") video.currentTime = data.time;
+        try {
+            await video.play();
+        } catch (e) {
+            video.muted = true;
+            await video.play().catch(() => {});
         }
-    );
+        return;
+    }
 
-}
+    if (data.type === "PAUSE") {
+        if (typeof data.time === "number") video.currentTime = data.time;
+        video.pause();
+        return;
+    }
 
+    if (data.type === "SEEK") {
+        if (typeof data.time === "number") video.currentTime = data.time;
+        return;
+    }
 
-/* =========================================================
-   STREAMER:
-   CARGAR VIDEO DESDE INPUT
-   ========================================================= */
+    if (data.type === "HEARTBEAT") {
+        if (video.readyState < HTMLMediaElement.HAVE_METADATA) return;
 
-if (isStreamer && loadBtn) {
+        const diff = data.time - video.currentTime;
+        const absDiff = Math.abs(diff);
 
-    loadBtn.addEventListener(
-        "click",
-        function () {
-
-            let path =
-                urlInput.value.trim();
-
-            if (!path) {
-
-                return;
-
-            }
-
-            if (
-                !path.startsWith("videos/")
-            ) {
-
-                path =
-                    "videos/" + path;
-
-            }
-
-            setVideoSource(
-                path,
-                true
-            );
-
-            urlInput.value =
-                "";
-
+        if (absDiff > 1.5) {
+            video.currentTime = data.time;
+        } else if (absDiff > 0.35) {
+            video.playbackRate = diff > 0 ? 1.05 : 0.95;
+        } else {
+            video.playbackRate = 1.0;
         }
-    );
 
-}
-
-
-/* =========================================================
-   ENTER EN INPUT
-   ========================================================= */
-
-if (isStreamer && urlInput) {
-
-    urlInput.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (event.key !== "Enter") {
-
-                return;
-
-            }
-
-            if (loadBtn) {
-
-                loadBtn.click();
-
-            }
-
+        if (data.playing && video.paused) {
+            video.play().catch(() => {});
+        } else if (!data.playing && !video.paused) {
+            video.pause();
         }
-    );
-
+    }
 }
 
-
 /* =========================================================
-   STREAMER:
-   PLAY
-   ========================================================= */
-
-if (isStreamer) {
-
-    video.addEventListener(
-        "play",
-        function () {
-
-            channel.postMessage({
-
-                type: "PLAY",
-
-                time:
-                    video.currentTime
-
-            });
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   STREAMER:
-   PAUSE
-   ========================================================= */
-
-if (isStreamer) {
-
-    video.addEventListener(
-        "pause",
-        function () {
-
-            channel.postMessage({
-
-                type: "PAUSE",
-
-                time:
-                    video.currentTime
-
-            });
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   STREAMER:
-   SEEK / ADELANTAR / RETROCEDER
-   ========================================================= */
-
-if (isStreamer) {
-
-    video.addEventListener(
-        "seeked",
-        function () {
-
-            channel.postMessage({
-
-                type: "SEEK",
-
-                time:
-                    video.currentTime
-
-            });
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   VIEWER:
-   RECIBIR MENSAJES
-   ========================================================= */
-
-if (isViewer) {
-
-    channel.addEventListener(
-        "message",
-        async function (event) {
-
-            const data =
-                event.data;
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            /* -----------------------------------------
-               CARGAR CAPÍTULO
-               ----------------------------------------- */
-
-            if (data.type === "LOAD") {
-
-                video.src =
-                    data.path;
-
-                video.load();
-
-                showVideo();
-
-                return;
-
-            }
-
-
-            /* -----------------------------------------
-               PLAY
-               ----------------------------------------- */
-
-            if (data.type === "PLAY") {
-
-                if (
-                    typeof data.time ===
-                    "number"
-                ) {
-
-                    video.currentTime =
-                        data.time;
-
-                }
-
-                try {
-
-                    await video.play();
-
-                }
-                catch (error) {
-
-                    /*
-                     * Si el navegador bloquea
-                     * el autoplay con sonido,
-                     * lo reproducimos silenciado.
-                     */
-
-                    video.muted =
-                        true;
-
-                    try {
-
-                        await video.play();
-
-                    }
-                    catch (error2) {
-
-                        console.log(
-                            "El navegador bloqueó la reproducción automática.",
-                            error2
-                        );
-
-                    }
-
-                }
-
-                return;
-
-            }
-
-
-            /* -----------------------------------------
-               PAUSE
-               ----------------------------------------- */
-
-            if (data.type === "PAUSE") {
-
-                if (
-                    typeof data.time ===
-                    "number"
-                ) {
-
-                    video.currentTime =
-                        data.time;
-
-                }
-
-                video.pause();
-
-                return;
-
-            }
-
-
-            /* -----------------------------------------
-               SEEK
-               ----------------------------------------- */
-
-            if (data.type === "SEEK") {
-
-                if (
-                    typeof data.time ===
-                    "number"
-                ) {
-
-                    video.currentTime =
-                        data.time;
-
-                }
-
-                return;
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SINCRONIZACIÓN CONTINUA
-   ========================================================= */
-
-/*
- * El Streamer manda su posición cada 500 ms.
- * Esto solamente corrige pequeñas diferencias
- * entre ambos videos.
- */
-
-if (isStreamer) {
-
-    setInterval(
-        function () {
-
-            if (!video) {
-
-                return;
-
-            }
-
-            if (
-                video.readyState <
-                HTMLMediaElement.HAVE_METADATA
-            ) {
-
-                return;
-
-            }
-
-            channel.postMessage({
-
-                type: "HEARTBEAT",
-
-                time:
-                    video.currentTime,
-
-                playing:
-                    !video.paused
-
-            });
-
-        },
-        500
-    );
-
-}
-
-
-/* =========================================================
-   VIEWER:
-   CORREGIR DESFASE
-   ========================================================= */
-
-if (isViewer) {
-
-    channel.addEventListener(
-        "message",
-        async function (event) {
-
-            const data =
-                event.data;
-
-            if (
-                !data ||
-                data.type !==
-                "HEARTBEAT"
-            ) {
-
-                return;
-
-            }
-
-            if (!video) {
-
-                return;
-
-            }
-
-            if (
-                video.readyState <
-                HTMLMediaElement.HAVE_METADATA
-            ) {
-
-                return;
-
-            }
-
-            if (
-                typeof data.time !==
-                "number"
-            ) {
-
-                return;
-
-            }
-
-
-            const difference =
-                data.time -
-                video.currentTime;
-
-            const absoluteDifference =
-                Math.abs(
-                    difference
-                );
-
-
-            /*
-             * Si hay más de 1 segundo
-             * de diferencia, corregimos
-             * directamente.
-             */
-
-            if (
-                absoluteDifference >
-                1
-            ) {
-
-                video.currentTime =
-                    data.time;
-
-            }
-
-
-            /*
-             * Si la diferencia es pequeña,
-             * aceleramos o ralentizamos
-             * ligeramente para alcanzar
-             * al Streamer.
-             */
-
-            else if (
-                absoluteDifference >
-                0.30
-            ) {
-
-                if (difference > 0) {
-
-                    video.playbackRate =
-                        1.05;
-
-                } else {
-
-                    video.playbackRate =
-                        0.95;
-
-                }
-
-            }
-
-
-            /*
-             * Ya están prácticamente
-             * sincronizados.
-             */
-
-            else {
-
-                video.playbackRate =
-                    1.0;
-
-            }
-
-
-            /*
-             * Si Streamer está reproduciendo,
-             * Viewer debe reproducir.
-             */
-
-            if (
-                data.playing &&
-                video.paused
-            ) {
-
-                try {
-
-                    await video.play();
-
-                }
-                catch (error) {
-
-                    console.log(
-                        "No se pudo iniciar automáticamente el Viewer.",
-                        error
-                    );
-
-                }
-
-            }
-
-
-            /*
-             * Si Streamer está pausado,
-             * Viewer también.
-             */
-
-            if (
-                !data.playing &&
-                !video.paused
-            ) {
-
-                video.pause();
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   CONTROL DE VOLUMEN DEL VIEWER
+   CONTROL DE VOLUMEN VIEWER
    ========================================================= */
 
 if (isViewer && viewerVolume) {
-
-    viewerVolume.addEventListener(
-        "input",
-        function () {
-
-            video.volume =
-                Number(
-                    viewerVolume.value
-                );
-
-            /*
-             * Si el usuario sube el volumen,
-             * quitamos mute.
-             */
-
-            if (
-                video.volume > 0
-            ) {
-
-                video.muted =
-                    false;
-
-            }
-
-        }
-    );
-
+    viewerVolume.addEventListener("input", () => {
+        video.volume = Number(viewerVolume.value);
+        if (video.volume > 0) video.muted = false;
+    });
 }
