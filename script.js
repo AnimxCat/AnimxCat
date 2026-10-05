@@ -2,7 +2,7 @@
    CONFIGURACIÓN Y DETECCIÓN
    ========================================================= */
 
-const twitchChannel = "theponchomx";
+const twitchChannel = "catsaac_";
 const twitchParent = "animxcat.github.io";
 
 const params = new URLSearchParams(window.location.search);
